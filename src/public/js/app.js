@@ -73,10 +73,6 @@ socket.on("message", (nickName, message) => {
     addChat(`${nickName}: ${message}`);
 })
 
-socket.on("close", () => {
-    console.log("Disconnected from Server.");
-})
-
 room_form.addEventListener("submit", handleRoomSubmit);
 nick_form.addEventListener("submit", handleNickSubmit);
 chat_form.addEventListener("submit", handleNewMessage);
