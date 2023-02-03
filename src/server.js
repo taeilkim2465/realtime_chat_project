@@ -40,17 +40,21 @@ const wsServer = SocketIO(httpServer);
 // })
 
 wsServer.on("connection", (socket) => {
-    socket.on("save_nick", (nickName) => {
-        socket["nickname"] = nickName;
-    });
+    socket["nickname"] = "Anonymous";
+    socket.on("nickname", (nickname) => {socket["nickname"] = nickname});
     socket.on("enter_room", (roomName, done) => {
         done();
         socket.join(roomName);
-        socket.to(roomName).emit("welcome!", socket["nickname"]);
+        socket.to(roomName).emit("welcome!", socket.nickname);
     });
-    socket.on("new_message", (roomName, nickName, message_content) => {
-        console.log(roomName, nickName, message_content)
-        socket.to(roomName).emit("message", nickName, message_content);
+    socket.on("disconnecting", () => {
+        socket.rooms.forEach((room) => {
+            socket.to(room).emit("bye", socket.nickname)
+        });
+    });
+    socket.on("new_message", (message, room, done) => {
+        socket.to(room).emit("message", `${socket.nickname}: ${message}`);
+        done();
     });
 });
 

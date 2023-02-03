@@ -14,16 +14,14 @@ html(lang="en")
         header
             h1 Noom
         main
-            div#start
-                div#nick
-                    form 
-                        input(type="text", placeholder="choose your name", required)
-                        button Save
-                    h3
-                div#welcome 
-                    form 
-                        input(type="text", placeholder="room name", required)
-                        button Enter Room 
+            div#welcome
+                form#nick
+                    input(type="text", placeholder="choose your nickname", required)
+                    button Save
+                h3
+                form#room
+                    input(type="text", placeholder="room name", required)
+                    button Enter Room 
 
             div#chat
                 h3

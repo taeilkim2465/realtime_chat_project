@@ -1,32 +1,36 @@
 const socket = io();
 
-const start = document.getElementById("start");
-const nick = document.getElementById("nick");
-const nick_form = nick.querySelector("form");
 const welcome = document.getElementById("welcome");
-const room_form = welcome.querySelector("form");
+const nick_form = document.querySelector("#nick");
+const room_form = document.querySelector("#room");
 const chat = document.getElementById("chat");
-const chat_form  = chat.querySelector("form");
-
 
 chat.hidden = true;
 
 let roomName;
-let nickName;
 
-function showChattingWindow() {
-    start.hidden = true;
-    chat.hidden = false;
-    const h3 = chat.querySelector("h3");
-    h3.innerText = `Room ${roomName}`;
-
-}
-
-function addChat(message) {
+function addMessage(message) {
     const ul = chat.querySelector("ul");
     const li = document.createElement("li");
     li.innerText = message;
     ul.appendChild(li);
+}
+
+function showChattingWindow() {
+    welcome.hidden = true;
+    chat.hidden = false;
+    const h3 = chat.querySelector("h3");
+    h3.innerText = `Room ${roomName}`;
+    const chat_form = chat.querySelector("form");
+    chat_form.addEventListener("submit", handleMessageSubmit);
+}
+
+function handleNicknameSubmit(event) {
+    event.preventDefault();
+    const input = nick_form.querySelector("input");
+    socket.emit("nickname", input.value);
+    const h3 = welcome.querySelector("h3");
+    h3.innerText = `Saved Nickname: ${input.value}`;
 }
 
 function handleRoomSubmit(event) {
@@ -38,41 +42,27 @@ function handleRoomSubmit(event) {
     input.value = "";
 }
 
-function handleNickSubmit(event) {
+function handleMessageSubmit(event) {
     event.preventDefault();
-    const input = nick_form.querySelector("input");
-    socket.emit("save_nick", input.value)
-    nickName = input.value;
-    const h3 = nick.querySelector("h3");
-    h3.innerText = `Saved Nickname: ${input.value}`;
-}
-
-function handleNewMessage(event) {
-    event.preventDefault();
-    const input = chat_form.querySelector("input");
-    socket.emit("new_message", roomName, nickName, input.value);
-    const ul = chat.querySelector("ul");
-    const li = document.createElement("li");
-    li.innerText = nickName+": "+input.value;
-    ul.appendChild(li);
+    const input = chat.querySelector("input");
+    const message = input.value;
+    socket.emit("new_message", message, roomName, () => {
+        addMessage(`You: ${message}`);
+    });
     input.value = "";
 }
 
-function welcomeMessage(message) {
-    const ul = chat.querySelector("ul");
-    const li = document.createElement("li");
-    li.innerText = message;
-    ul.appendChild(li);
-}
-
-socket.on("welcome!", (nickName) => {
-    welcomeMessage(`${nickName} joined!`);
+socket.on("welcome!", (nickname) => {
+    addMessage(`${nickname} joined!`);
 });
 
-socket.on("message", (nickName, message) => {
-    addChat(`${nickName}: ${message}`);
+socket.on("bye", (nickname) => {
+    addMessage(`${nickname} left!`);
+});
+
+socket.on("message", (message) => {
+    addMessage(message);
 })
 
+nick_form.addEventListener("submit", handleNicknameSubmit);
 room_form.addEventListener("submit", handleRoomSubmit);
-nick_form.addEventListener("submit", handleNickSubmit);
-chat_form.addEventListener("submit", handleNewMessage);
