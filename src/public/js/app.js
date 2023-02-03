@@ -19,10 +19,13 @@ function addMessage(message) {
 function showChattingWindow() {
     welcome.hidden = true;
     chat.hidden = false;
-    const h3 = chat.querySelector("h3");
-    h3.innerText = `Room ${roomName}`;
     const chat_form = chat.querySelector("form");
     chat_form.addEventListener("submit", handleMessageSubmit);
+}
+
+function chatMemberUpdate(count) {
+    const h3 = chat.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${count})`;
 }
 
 function handleNicknameSubmit(event) {
@@ -52,17 +55,37 @@ function handleMessageSubmit(event) {
     input.value = "";
 }
 
-socket.on("welcome!", (nickname) => {
+socket.on("room_member_info", (count) => {
+    chatMemberUpdate(count);
+});
+
+socket.on("welcome!", (nickname, count) => {
+    chatMemberUpdate(count);
     addMessage(`${nickname} joined!`);
 });
 
-socket.on("bye", (nickname) => {
+socket.on("bye", (nickname, count) => {
+    chatMemberUpdate(count);
     addMessage(`${nickname} left!`);
 });
 
 socket.on("message", (message) => {
     addMessage(message);
-})
+});
+
+socket.on("room_change", (rooms) => {
+    const ul = welcome.querySelector("ul");
+    ul.innerHTML = "";
+    if(rooms == null || rooms.length === 0) {
+        return;
+    }
+    rooms.forEach((room) => {
+        const li = document.createElement("li");
+        li.innerText = `${room[0]} (${room[1]})`;
+        ul.appendChild(li);
+
+    });
+});
 
 nick_form.addEventListener("submit", handleNicknameSubmit);
 room_form.addEventListener("submit", handleRoomSubmit);

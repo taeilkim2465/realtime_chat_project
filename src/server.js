@@ -39,19 +39,55 @@ const wsServer = SocketIO(httpServer);
 //     })
 // })
 
+function publicRooms() {
+    // const rooms = wsServer.sockets.adapter.rooms;
+    // const sids = wsServer.sockets.adapter.sids;
+
+    // 구조체 할당
+    const {
+        sockets: {
+            adapter: {sids, rooms},
+        },
+    } = wsServer;
+
+    const publicRooms = [];
+    rooms.forEach((value, key) => {
+        if(sids.get(key) === undefined) {
+            // publicRooms.push([key, value.length])
+            publicRooms.push([key, value.size]);
+        }
+    })
+    return publicRooms;
+}
+
+function countRoom(roomName) {
+    // 채팅룸을 찾은 경우에만 size를 출력할 수 있도록 ? 연산자 사용
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+
 wsServer.on("connection", (socket) => {
     socket["nickname"] = "Anonymous";
+    wsServer.sockets.emit("room_change", publicRooms());
+    socket.onAny((event) => {
+        // console.log(wsServer.sockets.adapter);
+        // console.log(`Socket Event:${event}`);
+    });
     socket.on("nickname", (nickname) => {socket["nickname"] = nickname});
     socket.on("enter_room", (roomName, done) => {
         done();
         socket.join(roomName);
-        socket.to(roomName).emit("welcome!", socket.nickname);
+        socket.emit("room_member_info", countRoom(roomName));
+        socket.to(roomName).emit("welcome!", socket.nickname, countRoom(roomName));
+        wsServer.sockets.emit("room_change", publicRooms());
     });
     socket.on("disconnecting", () => {
         socket.rooms.forEach((room) => {
-            socket.to(room).emit("bye", socket.nickname)
+            socket.to(room).emit("bye", socket.nickname, countRoom(room)-1);
         });
     });
+    socket.on("disconnect", () => {
+        wsServer.sockets.emit("room_change", publicRooms());
+    })
     socket.on("new_message", (message, room, done) => {
         socket.to(room).emit("message", `${socket.nickname}: ${message}`);
         done();
